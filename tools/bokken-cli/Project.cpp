@@ -4,7 +4,9 @@
 #include "Manifest.hpp"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -192,9 +194,15 @@ namespace Bokken
             if (!fs::is_directory(binDir, ec))
                 return {};
 
-            // Preferred: launch the executable named by the caller (the
-            // Makefile passes APP_NAME via --bin). This is exact, so it
-            // never picks up a stray binary sharing the bin directory.
+            // Preferred and AUTHORITATIVE: when the caller names the binary
+            // (via --bin, or derived from the CMake project() name), launch
+            // exactly that file. If it isn't present we return empty so the
+            // caller can fail with a clear message — we deliberately do NOT
+            // fall through to the scan, because the build tree is full of
+            // stray executables (bokken-cli, and the vendored QuickJS tooling:
+            // lre-test, qjsc, qjs_exe, run-test262, api-test, …) and scanning
+            // could launch one of those by mistake. A confident wrong launch
+            // is worse than an honest failure.
             if (!binaryName.empty())
             {
 #if defined(_WIN32)
@@ -204,18 +212,29 @@ namespace Bokken
 #endif
                 if (fs::is_regular_file(candidate, ec))
                     return candidate;
-                // Named binary not present: fall through to the scan so a
-                // mismatched name still has a chance of launching something.
+                return {};
             }
 
-            // Fallback: scan the bin directory for the lone executable. Used
-            // when no name was given. Skips data and library artifacts, but
-            // cannot disambiguate two executables — pass --bin for that.
+            // Fallback scan: only reached when NO name was given at all. Skips
+            // data/library artifacts and the known stray executables that the
+            // engine's vendored builds drop into the tree. This still cannot
+            // safely disambiguate two real game executables — pass --bin (or
+            // rely on the CMake project name) for a deterministic launch.
+            static const char *kNonGameStems[] = {
+                "bokken-cli", "lre-test", "qjsc", "qjs_exe", "qjs",
+                "run-test262", "api-test", "function_source",
+            };
             for (const auto &entry : fs::directory_iterator(binDir, ec))
             {
                 if (ec || !entry.is_regular_file())
                     continue;
                 const fs::path path = entry.path();
+                const std::string stem = path.stem().string();
+                bool skip = false;
+                for (const char *s : kNonGameStems)
+                    if (stem == s) { skip = true; break; }
+                if (skip)
+                    continue;
                 const std::string extension = path.extension().string();
                 if (extension == ".assetpack" || extension == ".so" ||
                     extension == ".dylib" || extension == ".dll" ||
@@ -228,6 +247,39 @@ namespace Bokken
                 if (extension.empty())
                     return path;
 #endif
+            }
+            return {};
+        }
+
+        std::string resolveAppName(const ProjectLayout &layout)
+        {
+            const fs::path cmakeLists = layout.root / "CMakeLists.txt";
+            std::ifstream in(cmakeLists);
+            if (!in)
+                return {};
+
+            // Match `project(<name> ...)`. The name is the first token after
+            // the opening paren; it may be quoted. We deliberately match the
+            // FIRST project() call, which is the executable's name — the
+            // template wraps it in an if(APPLE)/else() with the same name in
+            // both branches, so first-match is correct either way. Comment
+            // lines (starting with #) are skipped so a commented-out project()
+            // can't fool us.
+            static const std::regex projectRe(
+                R"RE(^\s*project\s*\(\s*"?([A-Za-z0-9_.\-]+)"?)RE",
+                std::regex::icase);
+
+            std::string line;
+            while (std::getline(in, line))
+            {
+                const size_t firstNonSpace = line.find_first_not_of(" \t");
+                if (firstNonSpace != std::string::npos &&
+                    line[firstNonSpace] == '#')
+                    continue;
+
+                std::smatch m;
+                if (std::regex_search(line, m, projectRe))
+                    return m[1].str();
             }
             return {};
         }

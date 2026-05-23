@@ -42,6 +42,19 @@ namespace
         return false;
     }
 
+    // Read the value argument following a flag (e.g. `--bin Massive` yields
+    // "Massive"). Returns an empty string if the flag is absent or has no
+    // following token.
+    std::string flagValue(int argc, char *argv[], const char *flag)
+    {
+        for (int i = 1; i < argc; i++)
+        {
+            if (std::strcmp(argv[i], flag) == 0 && i + 1 < argc)
+                return argv[i + 1];
+        }
+        return {};
+    }
+
     // Run a command and capture its first line of stdout (for version
     // probes). Returns false if the command could not be run.
     bool captureFirstLine(const std::string &command, std::string &outLine)
@@ -169,16 +182,41 @@ int Bokken::CLI::runRun(int argc, char *argv[])
         }
     }
 
-    // Locate the deployed executable. With no --bin we scan bin/ for the
-    // lone executable, which is the common single-game case.
-    const fs::path executable = resolveGameExecutable(layout);
+    // Resolve which executable to launch, by name. The build deploys the
+    // game AND bokken-cli into the same bin/ directory, so a blind "first
+    // executable" scan can pick the wrong one — we must name the target.
+    // Priority: an explicit --bin <name>, else the CMake project() name (which
+    // is what names the output binary), else an empty name that falls back to
+    // the (bokken-cli-excluding) scan in resolveGameExecutable.
+    std::string binaryName = flagValue(argc, argv, "--bin");
+    if (binaryName.empty())
+        binaryName = resolveAppName(layout);
+
+    const fs::path executable = resolveGameExecutable(layout, binaryName);
     if (executable.empty())
     {
-        std::cerr << kRed << "Error: no game executable found under "
-                  << layout.binDirectory().string()
-                  << (noBuild ? " — drop --no-build to build it first."
-                              : " — the build did not produce one.")
-                  << kReset << "\n";
+        std::cerr << kRed << "Error: ";
+        if (!binaryName.empty())
+        {
+            std::cerr << "executable '" << binaryName << "' not found in "
+                      << layout.binDirectory().string() << ".\n"
+                      << "       The name comes from your CMake project() "
+                         "declaration"
+                      << (hasFlag(argc, argv, "--bin") ? " (overridden by --bin)"
+                                                       : "")
+                      << "; pass --bin <name> if your executable is named "
+                         "differently.";
+        }
+        else
+        {
+            std::cerr << "no game executable found in "
+                      << layout.binDirectory().string()
+                      << " — pass --bin <name> to specify which to launch.";
+        }
+        if (noBuild)
+            std::cerr << "\n       (Running with --no-build; drop it to build "
+                         "first.)";
+        std::cerr << kReset << "\n";
         return 1;
     }
 

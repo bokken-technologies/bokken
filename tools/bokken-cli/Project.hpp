@@ -60,9 +60,16 @@ namespace Bokken
         /** Locate the built game executable under bin/. When binaryName is
          *  given (the project's APP_NAME, passed by the Makefile via
          *  --bin), that exact file is used; otherwise the bin directory is
-         *  scanned for the lone executable. Returns an empty path if none is
-         *  found. */
+         *  scanned for the lone executable, skipping bokken-cli. Returns an
+         *  empty path if none is found. */
         std::filesystem::path resolveGameExecutable(
             const ProjectLayout &layout, const std::string &binaryName = {});
+
+        /** Determine the game's executable base name by reading the CMake
+         *  project(<name> ...) declaration in the project's CMakeLists.txt.
+         *  This is authoritative: CMake names the output binary after the
+         *  project. Returns an empty string if CMakeLists.txt can't be read or
+         *  no project() name is found. */
+        std::string resolveAppName(const ProjectLayout &layout);
     }
 }
