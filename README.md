@@ -1,21 +1,57 @@
-# Bokken Engine
+# Bokken
 
-Bokken is a high-performance, cross-platform 2D game engine built with a focus on systems architecture, custom tooling, and a lightweight scripting runtime.
+A cross-platform 2D game engine with a custom asset pipeline, a
+component-based scene model, and a TypeScript scripting runtime built on
+QuickJS-NG.
 
-Designed for developers who prefer "building the tools" over using black-box solutions, Bokken features a custom asset pipeline, a component-based architecture, and a specialized scripting integration using QuickJS-NG.
+Bokken is for developers who like owning their tools: the asset packer, the
+scripting bridge, the render pipeline, and the command-line workflow are all
+first-party rather than glued together from black boxes.
 
 ## Features
 
-- **Component-based architecture** — GameObjects with transforms, sprites, animations, particles, distortion effects, and user-authored behaviours
-- **Box2D v3 physics** — six collider types, eight joint types, full contact and sensor event system
-- **Lock-free audio mixer** — multi-channel routing, built-in DSP effects (gain, EQ, compressor, delay, distortion, reverb), and a custom-effect plugin path for user-authored DSP in C++
-- **Spatial audio** — distance attenuation, panning, and Doppler driven by an `AudioListener2D` component
-- **TypeScript scripting** — full type definitions, JSX-based UI, bytecode compilation via QuickJS-NG
-- **Asset packs** — bundled assets with virtual filesystem mounting via PhysFS
-- **Particle system** — CPU emitter with gravity, damping, color/size easing, and blend modes
-- **JSX UI layer** — flex layout, hooks (`useState`, `useEffect`), and inline event handling
+- **Component-based scenes** — GameObjects compose transforms, sprites,
+  animations, particles, lights, distortion effects, and user-authored
+  behaviours.
+- **TypeScript scripting** — full type definitions and JSX-based UI, compiled
+  to QuickJS-NG bytecode. Hot reload in development.
+- **Box2D v3 physics** — six collider types and eight joint types, with a full
+  contact and sensor event system surfaced to scripts.
+- **Audio** — a lock-free multi-channel mixer with built-in DSP (gain,
+  high-pass, low-pass, compressor, delay, distortion, reverb) and a C++ plugin
+  path for custom effects; spatial sources do distance attenuation, panning,
+  and Doppler via an `AudioListener2D`.
+- **2D lighting** — point, spot, and directional lights with soft shadows,
+  cookies, and animation envelopes.
+- **JSX UI layer** — flexbox layout, `useState`/`useEffect` hooks, and inline
+  event handling.
+- **Particle system** — CPU emitter with gravity, damping, color/size easing,
+  and blend modes.
+- **Asset packs** — assets bundled into archives and mounted through a virtual
+  filesystem (PhysFS).
+- **bokken-cli** — a single command-line tool for building, running, watching,
+  packing, and diagnosing projects.
 
-## Installation
+## Getting started
+
+You don't clone this engine directly to make a game. Start from the project
+template, which pulls the engine in automatically via CMake's `FetchContent`:
+
+```bash
+cookiecutter gh:bokken-technologies/template
+cd my-project
+make build      # First build fetches the engine and builds bokken-cli
+make install    # Put bokken-cli on your PATH
+bokken-cli run  # Build and launch
+```
+
+See the template's README for the full project workflow and `bokken-cli`
+command reference.
+
+## Building the engine directly
+
+Cloning this repository is only needed to work on the engine itself or to run
+its tests:
 
 ```bash
 git clone git@github.com:bokken-technologies/bokken.git
@@ -23,25 +59,17 @@ cd bokken
 make
 ```
 
-## Usage
-
-TODO: Write usage instructions here.
-
-## Development
-
-TODO: Write development instructions here.
-
 ## Contributing
 
-Contributions are welcome. Before submitting a pull request, please read [`CONTRIBUTING.md`](CONTRIBUTING.md) — in particular, all contributors are required to sign the Contributor License Agreement (CLA). This is automated via a GitHub bot when you open your first pull request.
-
-The standard fork-and-PR flow:
+Contributions are welcome. Before opening a pull request, read
+[`CONTRIBUTING.md`](CONTRIBUTING.md); all contributors must sign the Contributor
+License Agreement, which is handled automatically by a bot on your first PR.
 
 1. Fork it (<https://github.com/bokken-technologies/bokken/fork>)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+2. Create a feature branch (`git checkout -b my-feature`)
+3. Commit your changes (`git commit -am "Add my feature"`)
+4. Push the branch (`git push origin my-feature`)
+5. Open a pull request
 
 ## Contributors
 
