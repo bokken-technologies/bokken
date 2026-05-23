@@ -1,0 +1,46 @@
+# Ignore all CMake build artifacts
+build/
+build_win/
+bin/
+obj/
+
+# Ignore the source code and build files for SDL3/other libraries
+# These are fetched via CMake, so they don't belong in your repo
+vendor/
+third_party/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# Visual Studio (if you ever open the project there)
+.vs/
+*.user
+*.sln
+*.vcxproj
+*.filters
+
+# Ignore any accidental binaries in the root
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+*.log
+*.tmp
+*.swp
+.cache/
