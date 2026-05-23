@@ -2,7 +2,6 @@
 
 #include "Commands.hpp"
 #include "Compile.hpp"
-#include "New.hpp"
 #include "Pack.hpp"
 #include "WatchCommand.hpp"
 
@@ -16,6 +15,8 @@
 #if !defined(_WIN32)
 #include <unistd.h>  // isatty
 #endif
+
+#define BOKKEN_CLI_VERSION "0.1.0"
 
 namespace
 {
@@ -76,7 +77,7 @@ namespace Bokken
 {
     namespace CLI
     {
-        const char *version() { return "1.0.0"; }
+        const char *version() { return BOKKEN_CLI_VERSION; }
 
         const std::vector<Command> &commands()
         {
@@ -85,16 +86,6 @@ namespace Bokken
             // commands first, then the lower-level pipeline pieces, then
             // diagnostics.
             static const std::vector<Command> table = {
-                {"new",
-                 "Scaffold a new project from the template",
-                 "bokken-cli new [--name <name>] [--slug <slug>]\n"
-                 "\n"
-                 "With no flags, prompts interactively for a project name and a\n"
-                 "slug (the on-disk folder / executable name). --name supplies the\n"
-                 "human-facing title and derives the slug; --slug overrides it.\n"
-                 "Clones the template, strips its .git/, and rewrites placeholders.",
-                 "Project lifecycle", &runNew},
-
                 {"setup",
                  "Configure the native build (first-time bootstrap)",
                  "bokken-cli setup [--project <dir>]\n"
@@ -271,8 +262,7 @@ namespace Bokken
             }
 
             out << c(kDim)
-                << "Run `bokken-cli doctor` to check your toolchain, or "
-                   "`bokken-cli new` to start a project."
+                << "Run `bokken-cli doctor` to check your toolchain"
                 << c(kReset) << "\n";
         }
 

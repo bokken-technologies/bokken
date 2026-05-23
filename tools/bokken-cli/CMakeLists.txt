@@ -7,7 +7,6 @@
 #   pack     — directory tree → .assetpack, incremental
 #   clean    — remove build artifacts and caches
 #   doctor   — verify the toolchain is present
-#   new      — scaffold a new project from the template repo
 #
 # This CMakeLists is consumed by the engine's top-level CMake via
 # add_subdirectory(tools/bokken-cli). It depends on the qjs and miniz
@@ -27,7 +26,6 @@ add_executable(bokken-cli
     GameProcess.cpp
     Project.cpp
     Commands.cpp
-    New.cpp
 )
 
 # The watcher runs on its own thread and the development client uses the
@@ -68,7 +66,3 @@ elseif(DEFINED nlohmann_json_SOURCE_DIR)
     target_include_directories(bokken-cli PRIVATE
         "${nlohmann_json_SOURCE_DIR}/single_include")
 endif()
-
-# New.cpp uses std::regex and shells out to `git`. No extra link deps
-# needed for the regex (libstdc++) but the implementation does need
-# C++20 for std::filesystem; the parent CMake already enforces that.

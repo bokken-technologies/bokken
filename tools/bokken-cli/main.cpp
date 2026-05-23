@@ -10,7 +10,6 @@
  * The full command surface (run `bokken-cli help` for the formatted view):
  *
  *   Project lifecycle
- *     new      Scaffold a new project from the template
  *     setup    Configure the native build (first-time bootstrap)
  *     build    Compile scripts, pack assets, and build the native game
  *     run      Build, then launch the game and wait for it
@@ -23,13 +22,6 @@
  *
  *   Diagnostics
  *     doctor   Check the toolchain and project health
- *
- * Typical workflow, entirely make-free after the first build:
- *
- *     bokken-cli new --name "My Game"
- *     cd my-game
- *     bokken-cli run            # first run bootstraps the engine + CLI
- *     bokken-cli watch --run    # live-reload loop while you work
  *
  * Layout note:
  *   This source lives at tools/bokken-cli/ inside the engine repo. The
