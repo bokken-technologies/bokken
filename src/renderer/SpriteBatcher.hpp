@@ -156,7 +156,7 @@ namespace Bokken
 
             bool init();
 
-            void begin(int viewportWidth, int viewportHeight);
+            void begin(int projWidth, int projHeight, int viewportWidth = 0, int viewportHeight = 0);
 
             void drawTextured(const Texture2D *tex,
                               float x, float y, float w, float h,
@@ -301,6 +301,8 @@ namespace Bokken
 
             int m_viewportW = 0;
             int m_viewportH = 0;
+            int m_projW = 0;
+            int m_projH = 0;
             Stats m_stats;
 
             static constexpr int k_bufferSegments = 3;

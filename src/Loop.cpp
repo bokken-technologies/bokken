@@ -74,9 +74,33 @@ namespace Bokken
         if (windowOverrides.transparent)
             flags |= SDL_WINDOW_TRANSPARENT;
 
+        int createW = window.width;
+        int createH = window.height;
+
+        if (windowOverrides.useNativeResolution)
+        {
+            SDL_DisplayID primaryDisplay = SDL_GetPrimaryDisplay();
+            const SDL_DisplayMode *desktopMode = SDL_GetDesktopDisplayMode(primaryDisplay);
+            if (desktopMode)
+            {
+                /* SDL_GetDesktopDisplayMode reports the display's mode in
+                 * physical pixels (e.g. 2560x1440 on a 2x Retina display).
+                 * Divide by the content scale to get back to logical
+                 * coordinates before handing this to SDL_CreateWindow —
+                 * otherwise HIGH_PIXEL_DENSITY would double-apply the
+                 * scale and create a window at 2x the intended on-screen
+                 * size. */
+                const float contentScale = SDL_GetDisplayContentScale(primaryDisplay);
+                const float scale = (contentScale > 0.0f) ? contentScale : 1.0f;
+
+                createW = (int)((float)desktopMode->w / scale + 0.5f);
+                createH = (int)((float)desktopMode->h / scale + 0.5f);
+            }
+        }
+
         m_window = SDL_CreateWindow(
             configuration.general.displayTitle.c_str(),
-            window.width, window.height,
+            createW, createH,
             flags);
 
         if (!m_window)
@@ -112,17 +136,17 @@ namespace Bokken
             return false;
         }
 
-        // The configured window dimensions are the resolution the
-        // game is *designed* at. Make that the default render size so
-        // the scene stays visually identical regardless of how the
-        // user resizes / fullscreens the window — the composite blit
-        // letterboxes if the window aspect doesn't match.
-        //
-        // Users can change this later from JS via Renderer.setRenderSize().
-        // The mode they pick there is the one that sticks.
-        if (window.width > 0 && window.height > 0)
+        int physicalW = 0, physicalH = 0;
+        SDL_GetWindowSizeInPixels(m_window, &physicalW, &physicalH);
+
+        int logicalW = 0, logicalH = 0;
+        SDL_GetWindowSize(m_window, &logicalW, &logicalH);
+
+        const float dpiScale = (logicalW > 0) ? (float)physicalW / (float)logicalW : 1.0f;
+
+        if (physicalW > 0 && physicalH > 0)
         {
-            m_renderer->setRenderSize(window.width, window.height,
+            m_renderer->setRenderSize(physicalW, physicalH,
                                       Renderer::RenderSizePolicy::Fixed);
         }
 

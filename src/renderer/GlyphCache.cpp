@@ -4,7 +4,6 @@ namespace Bokken
 {
     namespace Renderer
     {
-
         static constexpr int kInitialAtlasSize = 2048;
         static constexpr int kMaxAtlasSize = 8192;
 
@@ -26,13 +25,21 @@ namespace Bokken
 
         bool GlyphCache::init()
         {
-            /* Atlas filtering: LINEAR.
+            /* Atlas storage: LINEAR.
              *
              * Glyphs are rasterised at kSupersample × the requested
-             * size, then sampled at 1× display size — meaning the GPU
-             * is downsampling, and linear sampling averages 4 high-res
-             * texels into each display pixel. This gives effectively
-             * 4× supersample anti-aliasing on text for free.
+             * size and stored in the atlas. The atlas texture itself
+             * MUST be created with LINEAR filtering — filtering is a
+             * texture parameter fixed at creation time (GL_TEXTURE_
+             * MIN/MAG_FILTER), not something a shader can override
+             * per-sample. Because the source data is supersampled,
+             * a LINEAR-filtered sample at draw time averages multiple
+             * high-res texels into each display pixel, which is what
+             * gives us free SSAA anti-aliasing on text.
+             *
+             * (NEAREST would defeat the whole point: it'd pick a single
+             * texel per destination pixel instead of averaging, so the
+             * supersampled data buys nothing and glyphs look blocky.)
              *
              * Under hover-scale animation (~1.05×) the source still
              * has more resolution than the destination, so glyphs
@@ -41,7 +48,7 @@ namespace Bokken
              * bumping kSupersample to 3 trades atlas memory for
              * crispness at higher zoom.
              *
-             * We also bumped the initial atlas size to 2048×2048
+             * We bumped the initial atlas size to 2048x2048
              * because each glyph now occupies (kSupersample)² more
              * area; the doubled atlas absorbs the extra without
              * triggering an early grow + re-rasterise. */
@@ -301,7 +308,7 @@ namespace Bokken
              * pixels. The Glyph's `width`/`height` below are 1× display
              * pixels, so the destination quad is smaller than the
              * source region, producing the SSAA-on-text effect when
-             * the GPU samples LINEAR. */
+             * the GPU samples with LINEAR filtering in the fragment shader. */
             outGlyph.u0 = m_penX;
             outGlyph.v0 = m_penY;
             outGlyph.u1 = m_penX + cropW;

@@ -45,7 +45,7 @@ namespace Bokken
          *   the camera reveals more or less content sideways but
          *   never vertically. Useful for side-scrollers where the
          *   playfield's vertical extent is gameplay-critical.
-        */
+         */
         enum class RenderSizePolicy
         {
             FollowWindow,
@@ -93,7 +93,7 @@ namespace Bokken
          * SDL_GetWindowSizeInPixels(). The two helpers windowToRender
          * / renderToWindow exist for clicks and other window-space
          * inputs that need to map into the scene.
-        */
+         */
         class Base
         {
         public:
@@ -130,9 +130,20 @@ namespace Bokken
              * engine should reference. Distinct from the window's
              * physical pixel size whenever the policy is not
              * FollowWindow.
-            */
+             */
             int renderWidth() const { return m_renderW; }
             int renderHeight() const { return m_renderH; }
+
+            /** Physical FBO/GL-viewport pixel size the pipeline actually
+             *  rasterises into. Equal to (renderWidth, renderHeight) under
+             *  FollowWindow; scaled up by dpiScale() under Fixed / FixedHeight
+             *  so the offscreen target isn't lower-resolution than the display
+             *  it gets composited into — this is what keeps text and SDF edges
+             *  crisp instead of upscale-blurred. Draw-call coordinates and
+             *  Layout still operate in renderWidth()/renderHeight(); this is
+             *  purely a GPU-side allocation/rasterisation detail. */
+            int targetWidth() const { return m_targetW; }
+            int targetHeight() const { return m_targetH; }
 
             RenderSizePolicy renderSizePolicy() const { return m_policy; }
 
@@ -147,7 +158,7 @@ namespace Bokken
              *
              * Returns false only on obviously broken input (zero or
              * negative dimensions paired with a fixed policy).
-            */
+             */
             bool setRenderSize(int width, int height,
                                RenderSizePolicy policy = RenderSizePolicy::Fixed);
 
@@ -161,14 +172,14 @@ namespace Bokken
              * Points inside the letterbox bars produce coordinates
              * outside [0..renderW/H] — callers can clamp or
              * range-check as needed.
-            */
+             */
             void windowToRender(float wx, float wy, float &rx, float &ry) const;
 
             /**
              * Inverse of windowToRender. Useful for placing native
              * overlays (cursors, OS pickers) at locations defined in
              * scene coordinates.
-            */
+             */
             void renderToWindow(float rx, float ry, float &wx, float &wy) const;
 
             /**
@@ -176,7 +187,7 @@ namespace Bokken
              * by the final composite blit. Exposed so input code can
              * detect whether a window-space click landed in the
              * letterbox bars (and should be ignored) vs the scene.
-            */
+             */
             void compositeDstRect(float &x, float &y, float &w, float &h) const;
 
             /**
@@ -187,7 +198,7 @@ namespace Bokken
              * refresh values mid-tick (before beginFrame) and let
              * onResize callbacks observe the new size in the same
              * frame they fire.
-            */
+             */
             void syncRenderSize() { recomputeRenderSize(); }
 
             void updateSize();
@@ -212,7 +223,7 @@ namespace Bokken
              *
              * @returns An integer id usable with
              *          removeRenderSizeListener() to unregister.
-            */
+             */
             int addRenderSizeListener(RenderSizeListener cb);
 
             /** Returns true if a listener with that id was removed. */
@@ -236,6 +247,7 @@ namespace Bokken
             // FixedHeight to derive m_renderW/H.
             RenderSizePolicy m_policy = RenderSizePolicy::FollowWindow;
             int m_renderW = 0, m_renderH = 0;
+            int m_targetW = 0, m_targetH = 0;
             int m_fixedW = 0, m_fixedH = 0;
 
             void buildDefaultPipeline();

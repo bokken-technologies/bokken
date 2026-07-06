@@ -98,9 +98,9 @@ namespace Bokken
             // that want a stable design resolution flip this with
             // setRenderSize() after init() (which Loop does using the
             // project's configured window dimensions).
-            m_policy  = RenderSizePolicy::FollowWindow;
-            m_fixedW  = m_physicalW;
-            m_fixedH  = m_physicalH;
+            m_policy = RenderSizePolicy::FollowWindow;
+            m_fixedW = m_physicalW;
+            m_fixedH = m_physicalH;
             m_renderW = m_physicalW;
             m_renderH = m_physicalH;
 
@@ -193,11 +193,11 @@ namespace Bokken
                     // that sample neighbour pixels (bloom downsample,
                     // FXAA).
                     int derived = static_cast<int>(
-                        std::lround((double)m_fixedH
-                                    * (double)m_physicalW
-                                    / (double)m_physicalH));
-                    if (derived < 1) derived = 1;
-                    if ((derived & 1) != 0) derived += 1;
+                        std::lround((double)m_fixedH * (double)m_physicalW / (double)m_physicalH));
+                    if (derived < 1)
+                        derived = 1;
+                    if ((derived & 1) != 0)
+                        derived += 1;
                     rw = derived;
                 }
                 break;
@@ -205,6 +205,18 @@ namespace Bokken
 
             m_renderW = rw;
             m_renderH = rh;
+
+            if (m_policy == RenderSizePolicy::FollowWindow)
+            {
+                m_targetW = m_renderW;
+                m_targetH = m_renderH;
+            }
+            else
+            {
+                const float scale = dpiScale();
+                m_targetW = std::max(1, (int)std::lround(m_renderW * scale));
+                m_targetH = std::max(1, (int)std::lround(m_renderH * scale));
+            }
         }
 
         bool Base::setRenderSize(int width, int height, RenderSizePolicy policy)
@@ -234,7 +246,7 @@ namespace Bokken
         int Base::addRenderSizeListener(RenderSizeListener cb)
         {
             const int id = m_nextRenderSizeListenerId++;
-            m_renderSizeListeners.push_back({ id, std::move(cb) });
+            m_renderSizeListeners.push_back({id, std::move(cb)});
             return id;
         }
 
@@ -287,7 +299,10 @@ namespace Bokken
             if (m_physicalW <= 0 || m_physicalH <= 0 ||
                 m_renderW <= 0 || m_renderH <= 0)
             {
-                x = 0.0f; y = 0.0f; w = 0.0f; h = 0.0f;
+                x = 0.0f;
+                y = 0.0f;
+                w = 0.0f;
+                h = 0.0f;
                 return;
             }
 
@@ -318,7 +333,9 @@ namespace Bokken
             compositeDstRect(dx, dy, dw, dh);
             if (dw <= 0.0f || dh <= 0.0f)
             {
-                rx = 0.0f; ry = 0.0f; return;
+                rx = 0.0f;
+                ry = 0.0f;
+                return;
             }
             rx = (wx - dx) * ((float)m_renderW / dw);
             ry = (wy - dy) * ((float)m_renderH / dh);
@@ -330,7 +347,9 @@ namespace Bokken
             compositeDstRect(dx, dy, dw, dh);
             if (m_renderW <= 0 || m_renderH <= 0)
             {
-                wx = 0.0f; wy = 0.0f; return;
+                wx = 0.0f;
+                wy = 0.0f;
+                return;
             }
             wx = dx + rx * (dw / (float)m_renderW);
             wy = dy + ry * (dh / (float)m_renderH);
@@ -345,15 +364,15 @@ namespace Bokken
 
             // Pipeline is the single source of truth for "what size
             // are we drawing at". A no-op if dimensions are unchanged.
-            if (m_renderW != m_pipeline.width() || m_renderH != m_pipeline.height())
+            if (m_targetW != m_pipeline.width() || m_targetH != m_pipeline.height())
             {
-                m_pipeline.resize(m_renderW, m_renderH);
+                m_pipeline.resize(m_targetW, m_targetH);
             }
 
             // The batcher's viewport and projection are bound to
             // render space; sprite stage draws using these. The final
             // composite blit re-bases the batcher to window space.
-            m_batcher.begin(m_renderW, m_renderH);
+            m_batcher.begin(m_renderW, m_renderH, m_targetW, m_targetH);
 
             // Notify observers of any render-size change. Fires only
             // when the dimensions actually changed since the last
@@ -416,9 +435,10 @@ namespace Bokken
                 //     non-integer scale produces visible row/column
                 //     duplication artefacts.
                 auto *colorTex = const_cast<Texture2D *>(&final->color());
-                const float scaleX = dstW / (float)m_renderW;
-                const float scaleY = dstH / (float)m_renderH;
-                auto nearInt = [](float s) -> bool {
+                const float scaleX = dstW / (float)m_targetW;
+                const float scaleY = dstH / (float)m_targetH;
+                auto nearInt = [](float s) -> bool
+                {
                     const float r = std::round(s);
                     return r >= 1.0f && std::abs(s - r) < 1e-3f;
                 };

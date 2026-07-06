@@ -44,7 +44,7 @@ namespace Bokken
              * attachment, oNormal/oEmissive writes are discarded by the
              * driver. The shader cost is unchanged either way — a few
              * extra ALU ops per fragment.
-            */
+             */
             const char *kVS = R"(#version 330 core
                 layout(location = 0) in vec2 a_pos;
                 layout(location = 1) in vec2 a_uv;
@@ -341,10 +341,12 @@ namespace Bokken
                          nullptr, GL_DYNAMIC_DRAW);
         }
 
-        void SpriteBatcher::begin(int viewportW, int viewportH)
+        void SpriteBatcher::begin(int projW, int projH, int viewportW, int viewportH)
         {
-            m_viewportW = viewportW;
-            m_viewportH = viewportH;
+            m_projW = projW;
+            m_projH = projH;
+            m_viewportW = (viewportW > 0) ? viewportW : projW;
+            m_viewportH = (viewportH > 0) ? viewportH : projH;
             m_quads.clear();
             m_verts.clear();
             m_indices.clear();
@@ -358,13 +360,12 @@ namespace Bokken
                                          BlendMode blend)
         {
             ScissorRect sc = m_scissorStack.empty()
-                ? ScissorRect{0, 0, 0, 0, false}
-                : m_scissorStack.back();
+                                 ? ScissorRect{0, 0, 0, 0, false}
+                                 : m_scissorStack.back();
             ShapeMode shape = (tex && tex->format() == TextureFormat::R8)
-                ? ShapeMode::AlphaMask
-                : ShapeMode::Textured;
-            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {},
-                   nullptr, false};
+                                  ? ShapeMode::AlphaMask
+                                  : ShapeMode::Textured;
+            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {}, nullptr, false};
             m_quads.push_back(q);
         }
 
@@ -375,13 +376,12 @@ namespace Bokken
                                             BlendMode blend, bool emissive)
         {
             ScissorRect sc = m_scissorStack.empty()
-                ? ScissorRect{0, 0, 0, 0, false}
-                : m_scissorStack.back();
+                                 ? ScissorRect{0, 0, 0, 0, false}
+                                 : m_scissorStack.back();
             ShapeMode shape = (tex && tex->format() == TextureFormat::R8)
-                ? ShapeMode::AlphaMask
-                : ShapeMode::Textured;
-            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {},
-                   normalTex, emissive};
+                                  ? ShapeMode::AlphaMask
+                                  : ShapeMode::Textured;
+            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {}, normalTex, emissive};
             m_quads.push_back(q);
         }
 
@@ -390,10 +390,9 @@ namespace Bokken
                                      BlendMode blend)
         {
             ScissorRect sc = m_scissorStack.empty()
-                ? ScissorRect{0, 0, 0, 0, false}
-                : m_scissorStack.back();
-            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, 0.0f, blend, sc,
-                   ShapeMode::SolidRect, {}, nullptr, false};
+                                 ? ScissorRect{0, 0, 0, 0, false}
+                                 : m_scissorStack.back();
+            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, 0.0f, blend, sc, ShapeMode::SolidRect, {}, nullptr, false};
             m_quads.push_back(q);
         }
 
@@ -402,12 +401,11 @@ namespace Bokken
                                             BlendMode blend)
         {
             ScissorRect sc = m_scissorStack.empty()
-                ? ScissorRect{0, 0, 0, 0, false}
-                : m_scissorStack.back();
+                                 ? ScissorRect{0, 0, 0, 0, false}
+                                 : m_scissorStack.back();
             float x = cx - w * 0.5f;
             float y = cy - h * 0.5f;
-            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, rotationRad, blend, sc,
-                   ShapeMode::SolidRect, {}, nullptr, false};
+            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, rotationRad, blend, sc, ShapeMode::SolidRect, {}, nullptr, false};
             m_quads.push_back(q);
         }
 
@@ -427,7 +425,8 @@ namespace Bokken
                                                       int layer,
                                                       BlendMode blend)
         {
-            if (w <= 0.0f || h <= 0.0f) return;
+            if (w <= 0.0f || h <= 0.0f)
+                return;
 
             /* Clamp corner radii to half the shorter side; this keeps the
              * SDF well-defined and matches CSS behaviour where a
@@ -440,15 +439,18 @@ namespace Bokken
             borderWidth = std::max(0.0f, borderWidth);
 
             ScissorRect sc = m_scissorStack.empty()
-                ? ScissorRect{0, 0, 0, 0, false}
-                : m_scissorStack.back();
+                                 ? ScissorRect{0, 0, 0, 0, false}
+                                 : m_scissorStack.back();
 
             RoundedRectParams p;
             p.cx = x + w * 0.5f;
             p.cy = y + h * 0.5f;
             p.halfW = w * 0.5f;
             p.halfH = h * 0.5f;
-            p.rTL = rTL; p.rTR = rTR; p.rBR = rBR; p.rBL = rBL;
+            p.rTL = rTL;
+            p.rTR = rTR;
+            p.rBR = rBR;
+            p.rBL = rBL;
             p.borderWidth = borderWidth;
             p.borderColor = borderColor;
 
@@ -481,7 +483,8 @@ namespace Bokken
                 int y0 = std::max(y, p.y);
                 int x1 = std::min(x + w, p.x + p.w);
                 int y1 = std::min(y + h, p.y + p.h);
-                x = x0; y = y0;
+                x = x0;
+                y = y0;
                 w = std::max(0, x1 - x0);
                 h = std::max(0, y1 - y0);
             }
@@ -490,7 +493,8 @@ namespace Bokken
 
         void SpriteBatcher::popScissor()
         {
-            if (!m_scissorStack.empty()) m_scissorStack.pop_back();
+            if (!m_scissorStack.empty())
+                m_scissorStack.pop_back();
         }
 
         void SpriteBatcher::applyScissor(const ScissorRect &rect)
@@ -501,13 +505,19 @@ namespace Bokken
                 return;
             }
             glEnable(GL_SCISSOR_TEST);
-            /* GL scissor uses bottom-left origin; layout is top-left.
-             * Convert: y_gl = viewportH - (y_top + h). */
-            int yGL = m_viewportH - (rect.y + rect.h);
-            if (yGL < 0) yGL = 0;
-            int wClamp = std::max(0, rect.w);
-            int hClamp = std::max(0, rect.h);
-            glScissor(rect.x, yGL, wClamp, hClamp);
+
+            const float sx = (m_projW > 0) ? (float)m_viewportW / (float)m_projW : 1.0f;
+            const float sy = (m_projH > 0) ? (float)m_viewportH / (float)m_projH : 1.0f;
+
+            const int gx = (int)std::lround(rect.x * sx);
+            const int gw = (int)std::lround(rect.w * sx);
+            const int gyTop = (int)std::lround(rect.y * sy);
+            const int gh = (int)std::lround(rect.h * sy);
+
+            int yGL = m_viewportH - (gyTop + gh);
+            if (yGL < 0)
+                yGL = 0;
+            glScissor(gx, yGL, std::max(0, gw), std::max(0, gh));
         }
 
         void SpriteBatcher::applyBlendMode(BlendMode mode)
@@ -533,7 +543,8 @@ namespace Bokken
         void SpriteBatcher::issueBatch(const Texture2D *tex, BlendMode blend,
                                        size_t firstQuad, size_t count)
         {
-            (void)tex; (void)blend;
+            (void)tex;
+            (void)blend;
             if (count == 0)
                 return;
 
@@ -582,8 +593,8 @@ namespace Bokken
                  * filling these for non-SDF quads is fine. */
                 const float br = ((q.sdf.borderColor >> 24) & 0xFF) / 255.0f;
                 const float bg = ((q.sdf.borderColor >> 16) & 0xFF) / 255.0f;
-                const float bb = ((q.sdf.borderColor >> 8)  & 0xFF) / 255.0f;
-                const float ba = ((q.sdf.borderColor >> 0)  & 0xFF) / 255.0f;
+                const float bb = ((q.sdf.borderColor >> 8) & 0xFF) / 255.0f;
+                const float ba = ((q.sdf.borderColor >> 0) & 0xFF) / 255.0f;
 
                 // Pack the emissive flag into the high bit of shape.
                 // ShapeMode is 0..3 so bit 7 is safely outside the
@@ -595,7 +606,10 @@ namespace Bokken
                 const float shapef = static_cast<float>(packedShape);
 
                 Vertex base{};
-                base.r = r; base.g = g; base.b = b; base.a = a;
+                base.r = r;
+                base.g = g;
+                base.b = b;
+                base.a = a;
                 base.rectCx = q.sdf.cx;
                 base.rectCy = q.sdf.cy;
                 base.rectHalfW = q.sdf.halfW;
@@ -605,16 +619,34 @@ namespace Bokken
                 base.radBR = q.sdf.rBR;
                 base.radBL = q.sdf.rBL;
                 base.borderW = q.sdf.borderWidth;
-                base.borderR = br; base.borderG = bg;
-                base.borderB = bb; base.borderA = ba;
+                base.borderR = br;
+                base.borderG = bg;
+                base.borderB = bb;
+                base.borderA = ba;
                 base.shape = shapef;
 
                 const uint32_t baseIdx = static_cast<uint32_t>(m_verts.size());
 
-                Vertex v0 = base; v0.x = x0; v0.y = y0; v0.u = q.u0; v0.v = q.v0;
-                Vertex v1 = base; v1.x = x1; v1.y = y1; v1.u = q.u1; v1.v = q.v0;
-                Vertex v2 = base; v2.x = x2; v2.y = y2; v2.u = q.u1; v2.v = q.v1;
-                Vertex v3 = base; v3.x = x3; v3.y = y3; v3.u = q.u0; v3.v = q.v1;
+                Vertex v0 = base;
+                v0.x = x0;
+                v0.y = y0;
+                v0.u = q.u0;
+                v0.v = q.v0;
+                Vertex v1 = base;
+                v1.x = x1;
+                v1.y = y1;
+                v1.u = q.u1;
+                v1.v = q.v0;
+                Vertex v2 = base;
+                v2.x = x2;
+                v2.y = y2;
+                v2.u = q.u1;
+                v2.v = q.v1;
+                Vertex v3 = base;
+                v3.x = x3;
+                v3.y = y3;
+                v3.u = q.u0;
+                v3.v = q.v1;
                 m_verts.push_back(v0);
                 m_verts.push_back(v1);
                 m_verts.push_back(v2);
@@ -655,10 +687,14 @@ namespace Bokken
                                      return !a.scissor.active;
                                  if (a.scissor.active && b.scissor.active)
                                  {
-                                     if (a.scissor.x != b.scissor.x) return a.scissor.x < b.scissor.x;
-                                     if (a.scissor.y != b.scissor.y) return a.scissor.y < b.scissor.y;
-                                     if (a.scissor.w != b.scissor.w) return a.scissor.w < b.scissor.w;
-                                     if (a.scissor.h != b.scissor.h) return a.scissor.h < b.scissor.h;
+                                     if (a.scissor.x != b.scissor.x)
+                                         return a.scissor.x < b.scissor.x;
+                                     if (a.scissor.y != b.scissor.y)
+                                         return a.scissor.y < b.scissor.y;
+                                     if (a.scissor.w != b.scissor.w)
+                                         return a.scissor.w < b.scissor.w;
+                                     if (a.scissor.h != b.scissor.h)
+                                         return a.scissor.h < b.scissor.h;
                                  }
                                  if (a.blend != b.blend)
                                      return a.blend < b.blend;
@@ -689,9 +725,12 @@ namespace Bokken
             };
             std::vector<BatchRecord> batches;
 
-            auto sameScissor = [](const ScissorRect &a, const ScissorRect &b) {
-                if (a.active != b.active) return false;
-                if (!a.active) return true;
+            auto sameScissor = [](const ScissorRect &a, const ScissorRect &b)
+            {
+                if (a.active != b.active)
+                    return false;
+                if (!a.active)
+                    return true;
                 return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
             };
 
@@ -700,13 +739,7 @@ namespace Bokken
                 while (i < m_quads.size())
                 {
                     size_t j = i + 1;
-                    while (j < m_quads.size()
-                           && m_quads[j].layer == m_quads[i].layer
-                           && m_quads[j].blend == m_quads[i].blend
-                           && m_quads[j].texture == m_quads[i].texture
-                           && m_quads[j].normalTexture == m_quads[i].normalTexture
-                           && m_quads[j].shape == m_quads[i].shape
-                           && sameScissor(m_quads[j].scissor, m_quads[i].scissor))
+                    while (j < m_quads.size() && m_quads[j].layer == m_quads[i].layer && m_quads[j].blend == m_quads[i].blend && m_quads[j].texture == m_quads[i].texture && m_quads[j].normalTexture == m_quads[i].normalTexture && m_quads[j].shape == m_quads[i].shape && sameScissor(m_quads[j].scissor, m_quads[i].scissor))
                     {
                         ++j;
                     }
@@ -761,8 +794,7 @@ namespace Bokken
             m_shader.bind();
 
             float proj[16];
-            orthoTopLeft(proj, static_cast<float>(m_viewportW),
-                         static_cast<float>(m_viewportH));
+            orthoTopLeft(proj, static_cast<float>(m_projW), static_cast<float>(m_projH));
             m_shader.setMat4("u_proj", proj);
             m_shader.setInt("u_tex", k_albedoUnit);
             m_shader.setInt("u_normalTex", k_normalUnit);
