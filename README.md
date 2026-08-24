@@ -8,29 +8,7 @@ Bokken is for developers who like owning their tools: the asset packer, the
 scripting bridge, the render pipeline, and the command-line workflow are all
 first-party rather than glued together from black boxes.
 
-## Features
-
-- **Component-based scenes** — GameObjects compose transforms, sprites,
-  animations, particles, lights, distortion effects, and user-authored
-  behaviours.
-- **TypeScript scripting** — full type definitions and JSX-based UI, compiled
-  to QuickJS-NG bytecode. Hot reload in development.
-- **Box2D v3 physics** — six collider types and eight joint types, with a full
-  contact and sensor event system surfaced to scripts.
-- **Audio** — a lock-free multi-channel mixer with built-in DSP (gain,
-  high-pass, low-pass, compressor, delay, distortion, reverb) and a C++ plugin
-  path for custom effects; spatial sources do distance attenuation, panning,
-  and Doppler via an `AudioListener2D`.
-- **2D lighting** — point, spot, and directional lights with soft shadows,
-  cookies, and animation envelopes.
-- **JSX UI layer** — flexbox layout, `useState`/`useEffect` hooks, and inline
-  event handling.
-- **Particle system** — CPU emitter with gravity, damping, color/size easing,
-  and blend modes.
-- **Asset packs** — assets bundled into archives and mounted through a virtual
-  filesystem (PhysFS).
-- **bokken-cli** — a single command-line tool for building, running, watching,
-  packing, and diagnosing projects.
+It features component-based scenes, TypeScript scripting with QuickJS-NG compilation, Box2D v3 physics, a multi-channel audio mixer with DSP, dynamic 2D lighting with soft shadows, a JSX-based UI layer with hooks, a CPU particle system, PhysFS virtual asset archives, and a comprehensive CLI tool for building and debugging projects.
 
 ## Getting started
 
