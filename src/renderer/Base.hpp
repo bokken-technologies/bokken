@@ -6,6 +6,7 @@
 #include "TextureCache.hpp"
 #include "../AssetPack.hpp"
 #include "stages/SpriteStage.hpp"
+#include "stages/UserInterfaceStage.hpp"
 #include "stages/CompositeStage.hpp"
 
 #include <glad/gl.h>

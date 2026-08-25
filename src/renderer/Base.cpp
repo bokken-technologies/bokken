@@ -139,6 +139,7 @@ namespace Bokken
         void Base::buildDefaultPipeline()
         {
             m_pipeline.addStage(std::make_unique<SpriteStage>("scene"));
+            m_pipeline.addStage(std::make_unique<UserInterfaceStage>("userInterface"));
             m_pipeline.addStage(std::make_unique<CompositeStage>("composite"));
         }
 
