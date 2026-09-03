@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GlyphCache.hpp"
 #include "RenderTarget.hpp"
 #include "SpriteBatcher.hpp"
 
@@ -38,6 +39,7 @@ namespace Bokken
             const RenderTarget *inputTarget = nullptr; // previous stage's output
             RenderTarget *outputTarget = nullptr;      // where this stage writes
             SpriteBatcher *batcher = nullptr;
+            SpriteBatcher *uiBatcher = nullptr;
             int viewportWidth = 0;
             int viewportHeight = 0;
             float dt = 0.0f;

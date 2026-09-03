@@ -354,18 +354,18 @@ namespace Bokken
         }
 
         void SpriteBatcher::drawTextured(const Texture2D *tex,
-                                         float x, float y, float w, float h,
-                                         float u0, float v0, float u1, float v1,
-                                         uint32_t rgba, int layer,
-                                         BlendMode blend)
+                                        float x, float y, float w, float h,
+                                        float u0, float v0, float u1, float v1,
+                                        uint32_t rgba, int layer,
+                                        BlendMode blend, float rotationDeg)
         {
             ScissorRect sc = m_scissorStack.empty()
-                                 ? ScissorRect{0, 0, 0, 0, false}
-                                 : m_scissorStack.back();
+                                ? ScissorRect{0, 0, 0, 0, false}
+                                : m_scissorStack.back();
             ShapeMode shape = (tex && tex->format() == TextureFormat::R8)
-                                  ? ShapeMode::AlphaMask
-                                  : ShapeMode::Textured;
-            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {}, nullptr, false};
+                                ? ShapeMode::AlphaMask
+                                : ShapeMode::Textured;
+            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, rotationDeg, blend, sc, shape, {}, nullptr, false};
             m_quads.push_back(q);
         }
 
@@ -373,7 +373,8 @@ namespace Bokken
                                             float x, float y, float w, float h,
                                             float u0, float v0, float u1, float v1,
                                             uint32_t rgba, int layer,
-                                            BlendMode blend, bool emissive)
+                                            BlendMode blend, bool emissive,
+                                            float rotationDeg)
         {
             ScissorRect sc = m_scissorStack.empty()
                                  ? ScissorRect{0, 0, 0, 0, false}
@@ -381,7 +382,7 @@ namespace Bokken
             ShapeMode shape = (tex && tex->format() == TextureFormat::R8)
                                   ? ShapeMode::AlphaMask
                                   : ShapeMode::Textured;
-            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, 0.0f, blend, sc, shape, {}, normalTex, emissive};
+            Quad q{x, y, w, h, u0, v0, u1, v1, rgba, tex, layer, rotationDeg, blend, sc, shape, {}, normalTex, emissive};
             m_quads.push_back(q);
         }
 
@@ -397,7 +398,7 @@ namespace Bokken
         }
 
         void SpriteBatcher::drawRotatedRect(float cx, float cy, float w, float h,
-                                            float rotationRad, uint32_t rgba, int layer,
+                                            float rotationDeg, uint32_t rgba, int layer,
                                             BlendMode blend)
         {
             ScissorRect sc = m_scissorStack.empty()
@@ -405,7 +406,7 @@ namespace Bokken
                                  : m_scissorStack.back();
             float x = cx - w * 0.5f;
             float y = cy - h * 0.5f;
-            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, rotationRad, blend, sc, ShapeMode::SolidRect, {}, nullptr, false};
+            Quad q{x, y, w, h, 0.f, 0.f, 1.f, 1.f, rgba, nullptr, layer, rotationDeg, blend, sc, ShapeMode::SolidRect, {}, nullptr, false};
             m_quads.push_back(q);
         }
 
@@ -571,8 +572,11 @@ namespace Bokken
                 {
                     float cx = q.x + q.w * 0.5f;
                     float cy = q.y + q.h * 0.5f;
-                    float cosR = std::cos(q.rotation);
-                    float sinR = std::sin(q.rotation);
+
+                    // Convert degrees to radians here!
+                    float rad = glm::radians(q.rotation);
+                    float cosR = std::cos(rad);
+                    float sinR = std::sin(rad);
 
                     auto rotate = [cx, cy, cosR, sinR](float &px, float &py)
                     {
@@ -587,7 +591,7 @@ namespace Bokken
                     rotate(x2, y2);
                     rotate(x3, y3);
                 }
-
+                
                 /* SDF parameters — inactive shapes get zeroed but the
                  * shader's branch on v_shape skips them anyway, so
                  * filling these for non-SDF quads is fine. */
@@ -669,15 +673,6 @@ namespace Bokken
             if (m_quads.empty())
                 return;
 
-            /* Stable sort by (layer, scissor, blend, texture, normalTexture,
-             * shape). Normal texture is now part of the key so quads using
-             * different normal maps batch separately — matching how
-             * different albedo textures already break a batch. The shape
-             * tag stays in the key so SDF and textured quads never share
-             * a draw, since the SDF path doesn't sample u_tex and a
-             * different texture binding would force an extra draw call
-             * anyway. Stable so quads at the same key keep submission
-             * order. */
             std::stable_sort(m_quads.begin(), m_quads.end(),
                              [](const Quad &a, const Quad &b)
                              {
@@ -697,7 +692,7 @@ namespace Bokken
                                          return a.scissor.h < b.scissor.h;
                                  }
                                  if (a.blend != b.blend)
-                                     return a.blend < b.blend;
+                                     return static_cast<int>(a.blend) < static_cast<int>(b.blend);
                                  if (a.texture != b.texture)
                                      return a.texture < b.texture;
                                  if (a.normalTexture != b.normalTexture)
@@ -707,61 +702,12 @@ namespace Bokken
 
             m_stats.quadCount = static_cast<int>(m_quads.size());
 
-            // Build all vertex/index data for the entire frame.
             m_verts.clear();
             m_indices.clear();
             m_verts.reserve(m_quads.size() * 4);
             m_indices.reserve(m_quads.size() * 6);
 
-            struct BatchRecord
-            {
-                size_t firstVert;
-                size_t firstIndex;
-                size_t indexCount;
-                const Texture2D *texture;
-                const Texture2D *normalTexture;
-                BlendMode blend;
-                ScissorRect scissor;
-            };
-            std::vector<BatchRecord> batches;
-
-            auto sameScissor = [](const ScissorRect &a, const ScissorRect &b)
-            {
-                if (a.active != b.active)
-                    return false;
-                if (!a.active)
-                    return true;
-                return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
-            };
-
-            {
-                size_t i = 0;
-                while (i < m_quads.size())
-                {
-                    size_t j = i + 1;
-                    while (j < m_quads.size() && m_quads[j].layer == m_quads[i].layer && m_quads[j].blend == m_quads[i].blend && m_quads[j].texture == m_quads[i].texture && m_quads[j].normalTexture == m_quads[i].normalTexture && m_quads[j].shape == m_quads[i].shape && sameScissor(m_quads[j].scissor, m_quads[i].scissor))
-                    {
-                        ++j;
-                    }
-
-                    size_t prevVerts = m_verts.size();
-                    size_t prevInds = m_indices.size();
-
-                    issueBatch(m_quads[i].texture, m_quads[i].blend, i, j - i);
-
-                    batches.push_back({
-                        prevVerts,
-                        prevInds,
-                        m_indices.size() - prevInds,
-                        m_quads[i].texture,
-                        m_quads[i].normalTexture,
-                        m_quads[i].blend,
-                        m_quads[i].scissor,
-                    });
-
-                    i = j;
-                }
-            }
+            issueBatch(nullptr, BlendMode::Alpha, 0, m_quads.size());
 
             if (m_verts.empty())
             {
@@ -771,8 +717,8 @@ namespace Bokken
 
             ensureBufferCapacity(m_verts.size(), m_indices.size());
 
-            size_t vboOffset = m_bufferSegment * m_vboSegmentSize;
-            size_t iboOffset = m_bufferSegment * m_iboSegmentSize;
+            const size_t vboOffset = m_bufferSegment * m_vboSegmentSize;
+            const size_t iboOffset = m_bufferSegment * m_iboSegmentSize;
 
             glBindVertexArray(m_vao);
 
@@ -799,77 +745,112 @@ namespace Bokken
             m_shader.setInt("u_tex", k_albedoUnit);
             m_shader.setInt("u_normalTex", k_normalUnit);
 
+            const size_t vertByteBase = vboOffset;
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, x)));
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, u)));
+            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, r)));
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, rectCx)));
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, radTL)));
+            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, borderR)));
+            glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(vertByteBase + offsetof(Vertex, borderW)));
+
+            auto sameScissor = [](const ScissorRect &a, const ScissorRect &b)
+            {
+                if (a.active != b.active)
+                    return false;
+                if (!a.active)
+                    return true;
+                return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+            };
+
             BlendMode currentBlend = BlendMode::Alpha;
             applyBlendMode(currentBlend);
-
-            size_t vertByteBase = vboOffset;
-
-            glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, x)));
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, u)));
-            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, r)));
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, rectCx)));
-            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, radTL)));
-            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, borderR)));
-            glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                                  (const void *)(vertByteBase + offsetof(Vertex, borderW)));
 
             ScissorRect currentScissor{0, 0, 0, 0, false};
             applyScissor(currentScissor);
 
+            const Texture2D *currentAlbedo = nullptr;
             const Texture2D *currentNormal = nullptr;
 
-            for (const auto &batch : batches)
+            size_t batchStartQuad = 0;
+
+            auto executeDrawCall = [&](size_t count)
             {
-                if (batch.blend != currentBlend)
+                if (count == 0)
+                    return;
+
+                const size_t indexByteOffset = iboOffset + (batchStartQuad * 6 * sizeof(uint32_t));
+                glDrawElements(GL_TRIANGLES,
+                               static_cast<GLsizei>(count * 6),
+                               GL_UNSIGNED_INT,
+                               reinterpret_cast<const void *>(indexByteOffset));
+
+                m_stats.drawCallCount++;
+            };
+
+            for (size_t i = 0; i < m_quads.size(); ++i)
+            {
+                const Quad &q = m_quads[i];
+                const Texture2D *targetAlbedo = q.texture ? q.texture : &m_whiteTex;
+                const Texture2D *targetNormal = q.normalTexture ? q.normalTexture : &m_defaultNormalTex;
+
+                // Check for batch state boundary
+                if (i > 0)
                 {
-                    applyBlendMode(batch.blend);
-                    currentBlend = batch.blend;
+                    const Quad &prev = m_quads[i - 1];
+                    const Texture2D *prevAlbedo = prev.texture ? prev.texture : &m_whiteTex;
+                    const Texture2D *prevNormal = prev.normalTexture ? prev.normalTexture : &m_defaultNormalTex;
+
+                    bool stateChanged = (targetAlbedo != prevAlbedo) ||
+                                        (targetNormal != prevNormal) ||
+                                        (q.blend != prev.blend) ||
+                                        (q.shape != prev.shape) ||
+                                        (q.layer != prev.layer) ||
+                                        !sameScissor(q.scissor, prev.scissor);
+
+                    if (stateChanged)
+                    {
+                        executeDrawCall(i - batchStartQuad);
+                        batchStartQuad = i;
+                    }
+                }
+
+                // Apply state updates on switch
+                if (q.blend != currentBlend)
+                {
+                    applyBlendMode(q.blend);
+                    currentBlend = q.blend;
                     m_stats.blendSwitchCount++;
                 }
 
-                if (!sameScissor(batch.scissor, currentScissor))
+                if (!sameScissor(q.scissor, currentScissor))
                 {
-                    applyScissor(batch.scissor);
-                    currentScissor = batch.scissor;
+                    applyScissor(q.scissor);
+                    currentScissor = q.scissor;
                     m_stats.scissorSwitchCount++;
                 }
 
-                const Texture2D *albedo = batch.texture ? batch.texture : &m_whiteTex;
-                albedo->bind(k_albedoUnit);
-
-                // Bind the normal map at unit 1. Quads without an
-                // authored normal fall back to the 1x1 default which
-                // decodes to a flat up-normal in the lighting pass.
-                const Texture2D *normal = batch.normalTexture
-                                              ? batch.normalTexture
-                                              : &m_defaultNormalTex;
-                if (normal != currentNormal)
+                if (targetAlbedo != currentAlbedo)
                 {
-                    normal->bind(k_normalUnit);
-                    currentNormal = normal;
-                    m_stats.normalBindCount++;
+                    targetAlbedo->bind(k_albedoUnit);
+                    currentAlbedo = targetAlbedo;
+                    m_stats.textureBindCount++;
                 }
 
-                size_t indexByteOffset = iboOffset + batch.firstIndex * sizeof(uint32_t);
-
-                glDrawElements(GL_TRIANGLES,
-                               static_cast<GLsizei>(batch.indexCount),
-                               GL_UNSIGNED_INT,
-                               (const void *)indexByteOffset);
+                if (targetNormal != currentNormal)
+                {
+                    targetNormal->bind(k_normalUnit);
+                    currentNormal = targetNormal;
+                    m_stats.normalBindCount++;
+                }
             }
 
-            // Restore default blend mode for any non-batcher GL code.
+            // Submit remaining quad batch
+            executeDrawCall(m_quads.size() - batchStartQuad);
+
             if (currentBlend != BlendMode::Alpha)
                 applyBlendMode(BlendMode::Alpha);
-            // Always disable scissor on exit so downstream stages
-            // aren't surprised.
+
             if (currentScissor.active)
                 glDisable(GL_SCISSOR_TEST);
 
@@ -879,6 +860,7 @@ namespace Bokken
             glActiveTexture(GL_TEXTURE0 + k_normalUnit);
             glBindTexture(GL_TEXTURE_2D, 0);
             glActiveTexture(GL_TEXTURE0 + k_albedoUnit);
+            glBindVertexArray(0);
 
             // Rotate to the next triple-buffer segment.
             m_bufferSegment = (m_bufferSegment + 1) % k_bufferSegments;

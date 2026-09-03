@@ -16,13 +16,6 @@ namespace Bokken
 
         void SpriteStage::execute(const FrameContext &ctx)
         {
-            SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
-                         "[SpriteStage::execute] viewport=%dx%d "
-                         "output=%p batcher=%p lightingEnabled=%d",
-                         ctx.viewportWidth, ctx.viewportHeight,
-                         (const void*)ctx.outputTarget, (const void*)ctx.batcher,
-                         (int)lightingEnabled);
-
             if (!ctx.outputTarget || !ctx.batcher)
             {
                 SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
@@ -37,25 +30,15 @@ namespace Bokken
             {
                 if (!m_normalsAux)
                 {
-                    m_normalsAux = ctx.pipeline->requestAuxTarget(
-                        "normals", TextureFormat::RG16F);
-                    SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
-                                 "[SpriteStage::execute] requested aux 'normals' -> %p",
-                                 (const void*)m_normalsAux);
+                    m_normalsAux = ctx.pipeline->requestAuxTarget("normals", TextureFormat::RG16F);
                 }
                 if (!m_emissiveAux)
                 {
-                    m_emissiveAux = ctx.pipeline->requestAuxTarget(
-                        "emissive", TextureFormat::RGBA8);
-                    SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
-                                 "[SpriteStage::execute] requested aux 'emissive' -> %p",
-                                 (const void*)m_emissiveAux);
+                    m_emissiveAux = ctx.pipeline->requestAuxTarget("emissive", TextureFormat::RGBA8);
                 }
             }
 
             const bool mrt = lightingEnabled && m_normalsAux && m_emissiveAux;
-            SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
-                         "[SpriteStage::execute] mrt=%d", (int)mrt);
 
             if (mrt)
             {

@@ -106,7 +106,12 @@ namespace Bokken
 
             if (!m_batcher.init())
             {
-                SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[Renderer] SpriteBatcher init failed");
+                SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[Renderer] Main SpriteBatcher init failed");
+                return false;
+            }
+            if (!m_uiBatcher.init())
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[Renderer] UI SpriteBatcher init failed");
                 return false;
             }
             if (!m_glyphs.init())
@@ -138,7 +143,7 @@ namespace Bokken
 
         void Base::buildDefaultPipeline()
         {
-            m_pipeline.addStage(std::make_unique<SpriteStage>("scene"));
+            m_pipeline.addStage(std::make_unique<SpriteStage>("sprite"));
             m_pipeline.addStage(std::make_unique<UserInterfaceStage>("userInterface"));
             m_pipeline.addStage(std::make_unique<CompositeStage>("composite"));
         }
@@ -374,6 +379,7 @@ namespace Bokken
             // render space; sprite stage draws using these. The final
             // composite blit re-bases the batcher to window space.
             m_batcher.begin(m_renderW, m_renderH, m_targetW, m_targetH);
+            m_uiBatcher.begin(m_renderW, m_renderH, m_targetW, m_targetH);
 
             // Notify observers of any render-size change. Fires only
             // when the dimensions actually changed since the last
@@ -390,7 +396,7 @@ namespace Bokken
         {
             // Run pipeline. Each stage writes into the rotating ping-pong
             // targets; final output is in pipeline.finalOutput().
-            m_pipeline.render(&m_batcher, dt);
+            m_pipeline.render(&m_batcher, &m_uiBatcher, dt);
 
             // Composite to the default framebuffer (the actual window).
             const RenderTarget *final = m_pipeline.finalOutput();

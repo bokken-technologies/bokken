@@ -11,7 +11,7 @@ namespace Bokken
         {
         public:
             explicit UserInterfaceStage(std::string name = "userInterface")
-                : Stage(std::move(name), Kind::Post) {}
+                : Stage(std::move(name), Kind::Scene) {}
 
             bool setup() override;
             void execute(const FrameContext &ctx) override;

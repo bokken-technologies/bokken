@@ -150,9 +150,9 @@ namespace Bokken
                                       Renderer::RenderSizePolicy::Fixed);
         }
 
-        // Apply configured clear color to the default scene stage.
+        // Apply configured clear color to the default sprite stage.
         if (auto *st = dynamic_cast<Renderer::SpriteStage *>(
-                m_renderer->pipeline().findStage("scene")))
+                m_renderer->pipeline().findStage("sprite")))
         {
             st->clearR = m_clearR;
             st->clearG = m_clearG;
@@ -161,7 +161,7 @@ namespace Bokken
         }
 
         // Wire the renderer into the Canvas pieces that need it.
-        Scripting::Modules::Canvas::setBatcher(&m_renderer->batcher());
+        Scripting::Modules::Canvas::setBatcher(&m_renderer->uiBatcher());
         Scripting::Modules::Canvas::setTextureCache(&m_renderer->textures());
         Scripting::Modules::GameObject::setBatcher(&m_renderer->batcher());
         Scripting::Modules::GameObject::setTextureCache(&m_renderer->textures());

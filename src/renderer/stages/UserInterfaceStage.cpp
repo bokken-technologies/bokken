@@ -7,7 +7,7 @@ namespace Bokken
         namespace
         {
             /* FXAA, conservative tier tuned for UI:
-             * Prevents stair-stepping on rotated rects/SDF curves while 
+             * Prevents stair-stepping on rotated rects/SDF curves while
              * keeping alpha-masked glyph text sharp. */
             const char *kFS = R"(#version 330 core
                 in vec2 v_uv;
@@ -76,6 +76,18 @@ namespace Bokken
         {
             if (!ctx.inputTarget || !ctx.outputTarget)
                 return;
+
+            ctx.inputTarget->bind();
+            glViewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);
+
+            if (ctx.uiBatcher)
+            {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glDisable(GL_DEPTH_TEST);
+
+                ctx.uiBatcher->flush();
+            }
 
             ctx.outputTarget->bind();
             glViewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);

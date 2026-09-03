@@ -58,7 +58,11 @@ namespace Bokken
             {
             public:
                 GameObject(SDL_Window *window, AssetPack *assets)
-                    : Base("bokken/gameObject"), m_window(window), m_assets(assets) {}
+                    : Base("bokken/gameObject")
+                {
+                    s_window = window;
+                    s_assets = assets;
+                }
 
                 // Wired in by the Renderer module before the first frame.
                 static void setBatcher(Bokken::Renderer::SpriteBatcher *b) { s_batcher = b; }
@@ -112,6 +116,7 @@ namespace Bokken
                 static inline Bokken::Renderer::SpriteBatcher *s_batcher = nullptr;
                 static inline Bokken::Renderer::TextureCache *s_textures = nullptr;
                 static inline Bokken::Renderer::Base *s_renderer = nullptr;
+                static inline AssetPack *s_assets = nullptr;
 
                 static JSValue js_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
                 static JSValue js_add_component(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
@@ -270,8 +275,6 @@ namespace Bokken
                 static const char *shape2d_to_string(Bokken::GameObject::Shape2D shape);
 
             private:
-                SDL_Window *m_window;
-                AssetPack *m_assets;
             };
         }
     }

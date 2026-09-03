@@ -61,7 +61,7 @@ namespace Bokken
             return true;
         }
 
-        void Pipeline::render(SpriteBatcher *batcher, float dt)
+        void Pipeline::render(SpriteBatcher *batcher, SpriteBatcher *uiBatcher, float dt)
         {
             // Advance the frame counter before any stage runs. The
             // lighting stages key their per-frame gather off this so
@@ -92,6 +92,7 @@ namespace Bokken
                 ctx.inputTarget = input;
                 ctx.outputTarget = output;
                 ctx.batcher = batcher;
+                ctx.uiBatcher = uiBatcher;
                 ctx.viewportWidth = m_width;
                 ctx.viewportHeight = m_height;
                 ctx.dt = dt;

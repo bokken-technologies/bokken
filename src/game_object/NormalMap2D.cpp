@@ -46,23 +46,23 @@ namespace Bokken
                 return nullptr;
 
             // Fall back to Sobel-generation from the sibling Sprite2D's
-            // texturePath. The sibling lookup is via the GameObject's
+            // source. The sibling lookup is via the GameObject's
             // type-keyed component map; if no Sprite2D is present we
             // have nothing to derive from.
             if (!gameObject)
                 return nullptr;
             Sprite2D *sprite = gameObject->getComponent<Sprite2D>();
-            if (!sprite || sprite->texturePath.empty())
+            if (!sprite || sprite->source.empty())
             {
                 SDL_LogWarn(SDL_LOG_CATEGORY_RENDER,
                             "[NormalMap2D] autoGenerate requested but no sibling "
-                            "Sprite2D with texturePath on '%s'",
+                            "Sprite2D with source on '%s'",
                             gameObject->name.c_str());
                 return nullptr;
             }
 
             m_resolved = s_textureCache->loadOrGenerateNormal(
-                sprite->texturePath, s_assets, autoStrength);
+                sprite->source, s_assets, autoStrength);
             return m_resolved;
         }
 

@@ -10,9 +10,9 @@ namespace Bokken
                                           int count,
                                           int offsetX, int offsetY,
                                           int paddingX, int paddingY,
-                                          float fps,
+                                          float framesPerSecond,
                                           AnimationLoop loop,
-                                          const std::string &texturePath)
+                                          const std::string &source)
         {
             if (!s_textureCache || !s_assets)
             {
@@ -30,12 +30,12 @@ namespace Bokken
 
             // Resolve which texture to slice: explicit path takes priority,
             // otherwise fall back to the sibling Sprite2D's path.
-            std::string resolvedPath = texturePath;
+            std::string resolvedPath = source;
             if (resolvedPath.empty())
             {
                 auto *sprite = gameObject->getComponent<Sprite2D>();
                 if (sprite)
-                    resolvedPath = sprite->texturePath;
+                    resolvedPath = sprite->source;
             }
 
             if (resolvedPath.empty())
@@ -78,9 +78,9 @@ namespace Bokken
             // Build the clip from the generated region names.
             AnimationClip clip;
             clip.name = clipName;
-            clip.fps = fps;
+            clip.framesPerSecond = framesPerSecond;
             clip.loop = loop;
-            clip.texturePath = resolvedPath;
+            clip.source = resolvedPath;
             clip.frames.reserve(created);
 
             for (int i = 0; i < created; ++i)
@@ -100,10 +100,10 @@ namespace Bokken
                 return;
 
             const AnimationClip &clip = it->second;
-            if (clip.frames.empty() || clip.fps <= 0.0f)
+            if (clip.frames.empty() || clip.framesPerSecond <= 0.0f)
                 return;
 
-            float frameDuration = 1.0f / clip.fps;
+            float frameDuration = 1.0f / clip.framesPerSecond;
             m_timer += dt;
 
             while (m_timer >= frameDuration)
@@ -160,8 +160,8 @@ namespace Bokken
                     // If this clip has its own texture path, switch the
                     // Sprite2D to it. This allows different clips to source
                     // from different sprite sheets.
-                    if (!clip.texturePath.empty())
-                        sprite->texturePath = clip.texturePath;
+                    if (!clip.source.empty())
+                        sprite->source = clip.source;
                 }
             }
         }

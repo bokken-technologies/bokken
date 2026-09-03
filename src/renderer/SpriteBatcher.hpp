@@ -4,6 +4,8 @@
 #include "Texture2D.hpp"
 
 #include <SDL3/SDL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -162,7 +164,8 @@ namespace Bokken
                               float x, float y, float w, float h,
                               float u0, float v0, float u1, float v1,
                               uint32_t rgba = 0xFFFFFFFFu, int layer = 0,
-                              BlendMode blend = BlendMode::Alpha);
+                              BlendMode blend = BlendMode::Alpha,
+                              float rotationDeg = 0.0f);
 
             /**
              * Textured quad with an authored tangent-space normal map and
@@ -181,14 +184,15 @@ namespace Bokken
                                  float u0, float v0, float u1, float v1,
                                  uint32_t rgba = 0xFFFFFFFFu, int layer = 0,
                                  BlendMode blend = BlendMode::Alpha,
-                                 bool emissive = false);
+                                 bool emissive = false,
+                                 float rotationDeg = 0.0f);
 
             void drawRect(float x, float y, float w, float h,
                           uint32_t rgba, int layer = 0,
                           BlendMode blend = BlendMode::Alpha);
 
             void drawRotatedRect(float cx, float cy, float w, float h,
-                                 float rotationRad, uint32_t rgba, int layer = 0,
+                                 float rotationDeg, uint32_t rgba, int layer = 0,
                                  BlendMode blend = BlendMode::Alpha);
 
             /**

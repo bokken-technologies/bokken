@@ -26,7 +26,7 @@ namespace Bokken
          *    Substance produce by default).
          *
          * 2. Auto-generated — set autoGenerate = true with
-         *    normalMapPath empty. The sibling Sprite2D's texturePath
+         *    normalMapPath empty. The sibling Sprite2D's source
          *    is read at first resolve() and a Sobel-from-alpha normal
          *    map is generated; subsequent resolves hit the
          *    TextureCache's auto-normal cache and pay nothing.
@@ -47,13 +47,13 @@ namespace Bokken
          * @example
          *   const player = new GameObject("Player")
          *       .addComponent(Transform2D)
-         *       .addComponent(Sprite2D, { texturePath: "/sprites/player.png" })
+         *       .addComponent(Sprite2D, { source: "/sprites/player.png" })
          *       .addComponent(NormalMap2D, {
          *           normalMapPath: "/sprites/player.normal.png",
          *       });
          *
          *   const torch = new GameObject("Torch")
-         *       .addComponent(Sprite2D, { texturePath: "/sprites/torch.png" })
+         *       .addComponent(Sprite2D, { source: "/sprites/torch.png" })
          *       .addComponent(NormalMap2D, { autoGenerate: true });
         */
         class NormalMap2D : public Component

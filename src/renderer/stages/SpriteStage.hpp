@@ -44,7 +44,7 @@ namespace Bokken
         class SpriteStage : public Stage
         {
         public:
-            explicit SpriteStage(std::string name = "scene")
+            explicit SpriteStage(std::string name = "sprite")
                 : Stage(std::move(name), Kind::Scene) {}
 
             // Clear color — applied to the output target (albedo) before drawing.

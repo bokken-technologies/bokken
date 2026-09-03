@@ -111,6 +111,7 @@ namespace Bokken
             void endFrame(float dt);
 
             SpriteBatcher &batcher() { return m_batcher; }
+            SpriteBatcher &uiBatcher() { return m_uiBatcher; }
             GlyphCache &glyphs() { return m_glyphs; }
             TextureCache &textures() { return m_textures; }
             Pipeline &pipeline() { return m_pipeline; }
@@ -235,6 +236,7 @@ namespace Bokken
             SDL_GLContext m_glContext = nullptr;
 
             SpriteBatcher m_batcher;
+            SpriteBatcher m_uiBatcher;
             GlyphCache m_glyphs;
             TextureCache m_textures;
             Pipeline m_pipeline;

@@ -69,7 +69,7 @@ namespace Bokken
             /** Render a frame. Walks stages in order, rotating targets,
              *  finally leaves the last stage's output bound for whatever
              *  composite step the caller wants. */
-            void render(SpriteBatcher *batcher, float dt);
+            void render(SpriteBatcher *batcher, SpriteBatcher *uiBatcher, float dt);
 
             void addStage(std::unique_ptr<Stage> stage);
             bool removeStage(const std::string &name);

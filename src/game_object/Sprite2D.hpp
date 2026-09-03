@@ -22,7 +22,7 @@ namespace Bokken
          * When both Sprite2D and Mesh2D exist on the same GameObject,
          * Sprite2D takes priority for rendering.
          *
-         * The texturePath is resolved lazily at render time against the
+         * The source is resolved lazily at render time against the
          * TextureCache — no GL resources are held by this component.
         */
         class Sprite2D : public Component
@@ -30,7 +30,7 @@ namespace Bokken
         public:
             // Path to the texture in the asset pack VFS.
             // If regionName is empty, the full texture is drawn.
-            std::string texturePath;
+            std::string source;
 
             // Named region within the texture (from TextureCache::defineRegion).
             // Empty string means "use the full texture".

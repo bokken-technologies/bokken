@@ -34,6 +34,10 @@ namespace Bokken
             if (it != m_textures.end())
                 return it->second.get();
 
+            SDL_LogDebug(SDL_LOG_CATEGORY_RENDER,
+                         "[TextureCache] loading '%s' from asset pack",
+                         virtualPath.c_str());
+
             if (!assets || !assets->exists(virtualPath))
             {
                 SDL_LogError(SDL_LOG_CATEGORY_RENDER,

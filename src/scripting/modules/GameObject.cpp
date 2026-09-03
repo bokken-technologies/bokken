@@ -82,7 +82,7 @@ namespace Bokken
 
             enum Sprite2DProperties
             {
-                S2_TexturePath = 0,
+                S2_source = 0,
                 S2_RegionName,
                 S2_Tint,
                 S2_Opacity,
@@ -333,7 +333,7 @@ namespace Bokken
             };
 
             static const JSCFunctionListEntry s_s2Funcs[] = {
-                JS_CGETSET_MAGIC_DEF("texturePath", GameObject::js_sprite2d_get, GameObject::js_sprite2d_set, S2_TexturePath),
+                JS_CGETSET_MAGIC_DEF("source", GameObject::js_sprite2d_get, GameObject::js_sprite2d_set, S2_source),
                 JS_CGETSET_MAGIC_DEF("regionName", GameObject::js_sprite2d_get, GameObject::js_sprite2d_set, S2_RegionName),
                 JS_CGETSET_MAGIC_DEF("tint", GameObject::js_sprite2d_get, GameObject::js_sprite2d_set, S2_Tint),
                 JS_CGETSET_MAGIC_DEF("opacity", GameObject::js_sprite2d_get, GameObject::js_sprite2d_set, S2_Opacity),
@@ -603,8 +603,6 @@ namespace Bokken
 
             int GameObject::init(JSContext *ctx, JSModuleDef *m)
             {
-                s_window = m_window;
-
                 // GameObject prototype and constructor.
                 JSValue goProto = JS_NewObject(ctx);
                 JS_SetPropertyFunctionList(ctx, goProto, s_goProtoFuncs,
@@ -3015,8 +3013,8 @@ namespace Bokken
 
                 switch (magic)
                 {
-                case S2_TexturePath:
-                    return JS_NewString(ctx, sprite->texturePath.c_str());
+                case S2_source:
+                    return JS_NewString(ctx, sprite->source.c_str());
                 case S2_RegionName:
                     return JS_NewString(ctx, sprite->regionName.c_str());
                 case S2_Tint:
@@ -3065,16 +3063,16 @@ namespace Bokken
 
                 switch (magic)
                 {
-                case S2_TexturePath:
+                case S2_source:
                 {
                     const char *str = JS_ToCString(ctx, val);
                     if (str)
                     {
-                        sprite->texturePath = str;
+                        sprite->source = str;
 
                         // Eagerly load the texture into the cache so it's ready
                         // by the time present() runs.
-                        if (s_textures && !sprite->texturePath.empty())
+                        if (s_textures && !sprite->source.empty())
                         {
                             auto &engine = Bokken::Scripting::Engine::Instance();
                             // The AssetPack pointer lives on the Engine — we
@@ -3223,7 +3221,7 @@ namespace Bokken
                 return JS_UNDEFINED;
             }
 
-            // JS: animation.addClip({ name, frames, fps?, loop? })
+            // JS: animation.addClip({ name, frames, framesPerSecond?, loop? })
             //
             // frames can be:
             //   - An array of region name strings (explicit regions).
@@ -3253,16 +3251,16 @@ namespace Bokken
                 if (clipName.empty())
                     return JS_UNDEFINED;
 
-                // fps (optional, default 12)
-                float fps = 12.0f;
-                JSValue fpsVal = JS_GetPropertyStr(ctx, clipObj, "fps");
-                if (JS_IsNumber(fpsVal))
+                // framesPerSecond (optional, default 12)
+                float framesPerSecond = 12.0f;
+                JSValue framesPerSecondVal = JS_GetPropertyStr(ctx, clipObj, "framesPerSecond");
+                if (JS_IsNumber(framesPerSecondVal))
                 {
                     double d = 0;
-                    JS_ToFloat64(ctx, &d, fpsVal);
-                    fps = static_cast<float>(d);
+                    JS_ToFloat64(ctx, &d, framesPerSecondVal);
+                    framesPerSecond = static_cast<float>(d);
                 }
-                JS_FreeValue(ctx, fpsVal);
+                JS_FreeValue(ctx, framesPerSecondVal);
 
                 // loop (optional, default "Loop")
                 Bokken::GameObject::AnimationLoop loop = Bokken::GameObject::AnimationLoop::Loop;
@@ -3289,7 +3287,7 @@ namespace Bokken
                     // Explicit region name list.
                     Bokken::GameObject::AnimationClip clip;
                     clip.name = clipName;
-                    clip.fps = fps;
+                    clip.framesPerSecond = framesPerSecond;
                     clip.loop = loop;
 
                     uint32_t len = 0;
@@ -3336,14 +3334,14 @@ namespace Bokken
                     // Optional per-clip texture path. When present, this clip
                     // sources from a different sprite sheet than the Sprite2D's
                     // default. Useful for separate idle/run/jump PNGs.
-                    std::string clipTexturePath;
-                    JSValue texPathVal = JS_GetPropertyStr(ctx, framesVal, "texturePath");
+                    std::string clipsource;
+                    JSValue texPathVal = JS_GetPropertyStr(ctx, framesVal, "source");
                     if (JS_IsString(texPathVal))
                     {
                         const char *s = JS_ToCString(ctx, texPathVal);
                         if (s)
                         {
-                            clipTexturePath = s;
+                            clipsource = s;
                             JS_FreeCString(ctx, s);
                         }
                     }
@@ -3358,7 +3356,7 @@ namespace Bokken
 
                     anim->addClipFromGrid(clipName, frameW, frameH,
                                           count, offX, offY, padX, padY,
-                                          fps, loop, clipTexturePath);
+                                          framesPerSecond, loop, clipsource);
                 }
 
                 JS_FreeValue(ctx, framesVal);
@@ -3625,7 +3623,7 @@ namespace Bokken
                 {
                     auto *t = go->getComponent<Bokken::GameObject::Transform2D>();
                     auto *sprite = go->getComponent<Bokken::GameObject::Sprite2D>();
-                    if (!t || !sprite || sprite->texturePath.empty() || !s_textures)
+                    if (!t || !sprite || sprite->source.empty() || !s_textures)
                         continue;
 
                     // Resolve the texture region.
@@ -3637,7 +3635,13 @@ namespace Bokken
 
                     if (!reg)
                     {
-                        fullReg = s_textures->fullRegion(sprite->texturePath);
+                        fullReg = s_textures->fullRegion(sprite->source);
+                        if (!fullReg.isValid() && s_assets)
+                        {
+                            if (s_textures->load(sprite->source, s_assets))
+                                fullReg = s_textures->fullRegion(sprite->source);
+                        }
+
                         if (!fullReg.isValid())
                             continue;
                         reg = &fullReg;
@@ -3694,7 +3698,8 @@ namespace Bokken
                                             drawX, drawY, sw, sh,
                                             u0, v0, u1, v1,
                                             rgba, static_cast<int>(wt.zOrder),
-                                            sprite->blendMode);
+                                            sprite->blendMode,
+                                            -wt.rotation);
                 }
 
                 // Render meshes (solid-color primitives from Mesh2D).
@@ -3727,10 +3732,7 @@ namespace Bokken
 
                     if (wt.rotation != 0.0f)
                     {
-                        // Convert degrees to radians, negate because screen Y is flipped.
-                        float rotRad = -wt.rotation * (3.14159265f / 180.0f);
-                        s_batcher->drawRotatedRect(screenCX, screenCY, sw, sh,
-                                                   rotRad, rgba, static_cast<int>(wt.zOrder));
+                        s_batcher->drawRotatedRect(screenCX, screenCY, sw, sh, -wt.rotation, rgba, static_cast<int>(wt.zOrder));
                     }
                     else
                     {

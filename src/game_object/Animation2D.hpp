@@ -37,7 +37,7 @@ namespace Bokken
          *      and passes an array of their names.
          *
          *   2. Auto-sliced from a sprite sheet via addClipFromGrid(), which
-         *      reads the sibling Sprite2D's texturePath, loads the texture
+         *      reads the sibling Sprite2D's source, loads the texture
          *      if necessary, slices a grid from it, and fills the frames
          *      vector automatically.
         */
@@ -45,14 +45,14 @@ namespace Bokken
         {
             std::string name;
             std::vector<std::string> frames;  // TextureCache region names.
-            float fps = 12.0f;
+            float framesPerSecond = 12.0f;
             AnimationLoop loop = AnimationLoop::Loop;
 
             // Optional per-clip texture path. When set, Animation2D writes
             // this into the sibling Sprite2D on every frame switch, allowing
             // different clips to source from different sprite sheets.
             // Empty string means "use whatever the Sprite2D already has".
-            std::string texturePath;
+            std::string source;
         };
 
         /**
@@ -89,8 +89,8 @@ namespace Bokken
             /**
              * Add a clip by auto-slicing a sprite sheet texture.
              *
-             * If texturePath is non-empty, that texture is used. Otherwise
-             * the sibling Sprite2D's texturePath is used as a fallback.
+             * If source is non-empty, that texture is used. Otherwise
+             * the sibling Sprite2D's source is used as a fallback.
              * The texture is loaded into the cache automatically if needed.
              *
              * @param clipName     Unique clip name (e.g. "run", "idle").
@@ -103,7 +103,7 @@ namespace Bokken
              * @param paddingY     Vertical gap between frames.
              * @param fps          Playback speed.
              * @param loop         Loop mode.
-             * @param texturePath  Optional path to a specific sprite sheet.
+             * @param source  Optional path to a specific sprite sheet.
              *                     Empty string falls back to the Sprite2D's path.
              * @return             true if the clip was created successfully.
             */
@@ -114,7 +114,7 @@ namespace Bokken
                                  int paddingX = 0, int paddingY = 0,
                                  float fps = 12.0f,
                                  AnimationLoop loop = AnimationLoop::Loop,
-                                 const std::string &texturePath = "");
+                                 const std::string &source = "");
 
             /**
              * Start playing a named clip from the beginning.
