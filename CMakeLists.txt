@@ -152,6 +152,15 @@ FetchContent_Declare(
 set(SDLIMAGE_VENDORED ON  CACHE BOOL "" FORCE)
 set(SDLIMAGE_SAMPLES  OFF CACHE BOOL "" FORCE)
 
+# SDL3_net — TCP/UDP sockets (consumed by the bokken/network scripting module).
+FetchContent_Declare(
+  SDL3_net
+  GIT_REPOSITORY https://github.com/libsdl-org/SDL_net.git
+  GIT_TAG        main
+  GIT_SHALLOW    TRUE
+)
+set(SDLNET_SAMPLES OFF CACHE BOOL "" FORCE)
+
 # QuickJS-NG — scripting runtime.
 FetchContent_Declare(
   quickjs_ng
@@ -273,7 +282,7 @@ string(APPEND CMAKE_OBJC_FLAGS " -w")
 
 # Populate everything. First run: clones into third_party/ and configures
 # each subproject. Subsequent runs: reuses the cached source.
-FetchContent_MakeAvailable(SDL3 SDL3_ttf SDL3_image quickjs_ng json physfs miniz glm dr_libs box2d glad)
+FetchContent_MakeAvailable(SDL3 SDL3_ttf SDL3_image SDL3_net quickjs_ng json physfs miniz glm dr_libs box2d glad)
 
 set(CMAKE_C_FLAGS "${BOKKEN_SAVED_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${BOKKEN_SAVED_CXX_FLAGS}")
@@ -323,6 +332,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL3::SDL3-static
     SDL3_ttf::SDL3_ttf-static
     SDL3_image::SDL3_image-static
+    SDL3_net::SDL3_net-static
     miniz
     qjs
     nlohmann_json::nlohmann_json
@@ -355,7 +365,7 @@ target_include_directories(${PROJECT_NAME}
 
 # Platform-specific system libs.
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE shell32 imm32 setupapi version winmm)
+    target_link_libraries(${PROJECT_NAME} PRIVATE shell32 imm32 setupapi version winmm ws2_32 iphlpapi)
 elseif(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE m pthread dl)
 endif()

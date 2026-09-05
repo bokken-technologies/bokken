@@ -919,12 +919,12 @@ namespace Bokken
                 return arr;
             }
 
-            /* JS: audio.createEffect(name, initialParams?) → Effect | null
+            /* JS: audio.createEffect(name, initialParameters?) → Effect | null
              *
              * Looks up the registered descriptor by name, asks the factory
              * for a fresh instance, wraps it in an EffectHandle owned by
              * the JS handle, and installs per-parameter getter/setter
-             * pairs as own properties so `effect.<paramName>` reads and
+             * pairs as own properties so `effect.<parameterName>` reads and
              * writes the underlying std::atomic<float>.
              *
              * Returns JS_NULL when the name is unknown so callers can

@@ -49,7 +49,7 @@ namespace Bokken
             int maxHeapSizeMb;
             int stackSizeKb;
             int gcThresholdKb;
-            int interruptHandlerMs;
+            int interruptHandler;
         } runtime;
 
         struct Features
@@ -64,7 +64,7 @@ namespace Bokken
             std::string verbosity;
         } interop;
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Runtime, maxHeapSizeMb, stackSizeKb, gcThresholdKb, interruptHandlerMs)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(Runtime, maxHeapSizeMb, stackSizeKb, gcThresholdKb, interruptHandler)
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Features, enableBytecodeCache, enableProxy)
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Interop, printToStandardOut, verbosity)
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(ScriptingEngine, runtime, features, interop)

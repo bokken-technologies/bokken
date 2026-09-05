@@ -933,7 +933,7 @@ namespace Bokken
                 const JSAtom atom_style      = atom_for(ctx, "style");
                 const JSAtom atom_children   = atom_for(ctx, "children");
                 const JSAtom atom_length     = atom_for(ctx, "length");
-                const JSAtom atom_src        = atom_for(ctx, "src");
+                const JSAtom atom_src        = atom_for(ctx, "source");
                 const JSAtom atom_placeholder= atom_for(ctx, "placeholder");
                 const JSAtom atom_value      = atom_for(ctx, "value");
                 const JSAtom atom_onClick    = atom_for(ctx, "onClick");

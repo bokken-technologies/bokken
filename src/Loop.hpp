@@ -9,6 +9,7 @@
 #include "./scripting/Engine.hpp"
 #include "./scripting/modules/GameObject.hpp"
 #include "./scripting/modules/Input.hpp"
+#include "./scripting/modules/Network.hpp"
 #include "./scripting/modules/Renderer.hpp"
 #include "./scripting/modules/Window.hpp"
 #include "./game_object/Animation2D.hpp"

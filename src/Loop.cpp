@@ -161,11 +161,11 @@ namespace Bokken
         }
 
         // Wire the renderer into the Canvas pieces that need it.
-        Scripting::Modules::Canvas::setBatcher(&m_renderer->uiBatcher());
-        Scripting::Modules::Canvas::setTextureCache(&m_renderer->textures());
         Scripting::Modules::GameObject::setBatcher(&m_renderer->batcher());
         Scripting::Modules::GameObject::setTextureCache(&m_renderer->textures());
         Scripting::Modules::GameObject::setRenderer(m_renderer.get());
+        Scripting::Modules::Canvas::setBatcher(&m_renderer->uiBatcher());
+        Scripting::Modules::Canvas::setTextureCache(&m_renderer->textures());
         Canvas::Components::Label::s_glyphCache = &m_renderer->glyphs();
 
         // Wire the Window scripting module to the SDL window. The
@@ -445,6 +445,8 @@ namespace Bokken
         // (e.g. an interval that drives an animation tick).
         engine.tickTimers(dt);
 
+        Bokken::Scripting::Modules::Network::poll(engine.context());
+
         // Then fire any pending requestAnimationFrame callbacks. RAF
         // is the browser's "do this on the next paint" primitive, so
         // it logically belongs right before the variable update — the
@@ -574,6 +576,7 @@ namespace Bokken
         engine.addModule(std::make_unique<Scripting::Modules::GameObject>(m_window, m_assets));
         engine.addModule(std::make_unique<Scripting::Modules::Input>());
         engine.addModule(std::make_unique<Scripting::Modules::Log>());
+        engine.addModule(std::make_unique<Scripting::Modules::Network>());
         engine.addModule(std::make_unique<Scripting::Modules::Physics>());
         engine.addModule(std::make_unique<Scripting::Modules::Renderer>(m_renderer.get(), m_assets));
         engine.addModule(std::make_unique<Scripting::Modules::Window>());
