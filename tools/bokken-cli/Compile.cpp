@@ -59,6 +59,7 @@ namespace
         "bokken/gameObject",
         "bokken/input",
         "bokken/log",
+        "bokken/network",
         "bokken/physics",
         "bokken/renderer",
         "bokken/window",

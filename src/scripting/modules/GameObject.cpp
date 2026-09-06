@@ -1243,6 +1243,25 @@ namespace Bokken
                     if (lst)
                         result = wrap_audio_listener2d(ctx, lst);
                 }
+                else
+                {
+                    // Unknown token — check user-defined Behaviour classes,
+                    // mirroring js_add_component's fallback for the write
+                    // side. These live in m_jsBehaviours (not m_components,
+                    // which is keyed by C++ type and can't distinguish JS
+                    // subclasses that all share the JSBehaviour wrapper),
+                    // so walk every attached component/behaviour and match
+                    // by JS class identity instead.
+                    go->forEachComponent([&](Bokken::GameObject::Component *comp)
+                    {
+                        if (!JS_IsUndefined(result))
+                            return; // already found a match
+
+                        auto *jsb = dynamic_cast<Bokken::Scripting::Modules::JSBehaviour *>(comp);
+                        if (jsb && JS_IsInstanceOf(ctx, jsb->instance(), argv[0]) > 0)
+                            result = JS_DupValue(ctx, jsb->instance());
+                    });
+                }
 
                 JS_FreeCString(ctx, className);
                 return result;

@@ -91,12 +91,14 @@ namespace Bokken
                 return static_cast<T *>(it->second.get());
             }
 
+            // TODO: This will not find unknown components such as a custom behaviour.
             template <typename T>
             bool hasComponent() const
             {
                 return m_components.find(std::type_index(typeid(T))) != m_components.end();
             }
 
+            // TODO: This will find and affect unknown components such as a custom behaviour.
             template <typename T>
             void removeComponent()
             {
